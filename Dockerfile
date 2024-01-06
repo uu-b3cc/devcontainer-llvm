@@ -13,6 +13,10 @@ ENV LC_ALL C.UTF-8
 RUN echo 'APT::Install-Suggests "0";' >> /etc/apt/apt.conf.d/00-docker
 RUN echo 'APT::Install-Recommends "0";' >> /etc/apt/apt.conf.d/00-docker
 
+# tzdata is (?) a dependency of the packages, which requires a set timezone
+ARG CONTAINER_TIMEZONE=Europe/Amsterdam
+RUN ln -snf /usr/share/zoneinfo/${CONTAINER_TIMEZONE} /etc/localtime && echo ${CONTAINER_TIMEZONE} > /etc/timezone
+
 # Install dependencies to add package sources
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
@@ -24,10 +28,14 @@ RUN curl https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - \
  && add-apt-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-${LLVM_VERSION} main"
 
 # Install dependencies then clean up package lists
-# LLVM stuff, removed for this template: clang-${LLVM_VERSION} libclang-${LLVM_VERSION}-dev llvm-${LLVM_VERSION}-dev
+# The glut, capstone etc. dependencies are for the Quickhull practical
+# specifically (either for the framework or for Accelerate)
 RUN apt-get update \
- && apt-get install -y pkg-config git g++ make graphviz libgmp-dev openssh-client \
+ && apt-get install -y \
+        pkg-config git g++ make graphviz libgmp-dev openssh-client \
         clang-${LLVM_VERSION} libclang-${LLVM_VERSION}-dev llvm-${LLVM_VERSION}-dev \
+        freeglut3-dev libgmp-dev libcapstone-dev libfreetype6-dev libglfw3-dev \
+        libspice-client-gtk-3.0-dev libtbb-dev \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
